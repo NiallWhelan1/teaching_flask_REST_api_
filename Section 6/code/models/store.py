@@ -1,26 +1,23 @@
 from database import db
 
-class ItemModel(db.Model):
+class StoreModel(db.Model):
 
 	## Define Table Name for SQLAlchemy
-	__tablename__ = 'items'
+	__tablename__ = 'stores'
 
 	id = db.Column(db.Integer, primary_key = True)
 	name = db.Column(db.String(80))
-	price = db.Column(db.Float(precision = 2))
 
-	## Create Relationship to Store Table
-	store_id = db.Column(db.Integer, db.ForeignKey('stores.id'))
-	store = db.relationship('StoreModel')
+	## Leverages Foreign Key in the items table
+	items = db.relationship('ItemModel', lazy = 'dynamic') ## Will be a list as this is a many to one relationship
+	## lazy means the relationship wont be created until it is called specifically (you then need to use items.all() to access)
 
-	def __init__(self, name, price, store_id):
+	def __init__(self, name):
 		self.name = name
-		self.price =price
-		self.store_id = store_id
 
 
 	def json(self):
-		return {'name': self.name, 'price': self.price, 'store_id': self.store_id}
+		return {'id':self.id, 'name': self.name, 'items': [item.json() for item in self.items.all() ]}
 
 
 	@classmethod ## Allows us to call using self.find_by_name() or Item.find_by_name()
@@ -35,4 +32,3 @@ class ItemModel(db.Model):
 	def delete_from_db(self):
 		db.session.delete(self)
 		db.session.commit()
-

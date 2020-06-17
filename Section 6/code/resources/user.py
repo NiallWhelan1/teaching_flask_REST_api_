@@ -1,6 +1,9 @@
 import sqlite3
 from flask_restful import Resource, reqparse
+from flask_jwt import jwt_required
+
 from models.user import UserModel
+
 
 
 class UserRegister(Resource):
@@ -15,7 +18,6 @@ class UserRegister(Resource):
 						required = True,
 						help = 'This field cannot be left blank')
 
-
 	def post(self):
 		
 		data = UserRegister.parser.parse_args()
@@ -23,16 +25,15 @@ class UserRegister(Resource):
 		if UserModel.find_by_username(data['username']):
 			return {'message': 'Username alraedy exists'}, 400
 
-		connection = sqlite3.connect('data.db')
-		cursor = connection.cursor()
-
-		query = 'INSERT INTO users VALUES (NULL, ?, ?)'
-
-		cursor.execute(query, (data['username'], data['password']))
-
-		connection.commit()
-		connection.close()
+		user = UserModel(**data)
+		user.save_to_db()
 
 		return {'message': 'User added successfully'}, 201
 
 
+class UserList(Resource):
+
+	@jwt_required()
+	def get(self):
+		return {'users': [user.json() for user in UserModel.query.all()]}
+		
